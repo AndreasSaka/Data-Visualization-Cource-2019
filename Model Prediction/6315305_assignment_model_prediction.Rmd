@@ -1,5 +1,5 @@
 ---
-title: "6315305_assignment_prediction_model"
+title: "6315305_assignment_create_prediction_model"
 author: "Andreas Sakapetis"
 date: "January 18, 2019"
 output:

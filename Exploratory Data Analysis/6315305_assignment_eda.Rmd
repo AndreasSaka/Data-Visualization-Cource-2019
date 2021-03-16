@@ -1,0 +1,287 @@
+---
+title: "6315305_assignment_eda"
+author: "Andreas Sakapetis"
+date: "November 30, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+#loading the library "readxl" to be able to use the function read_xlsx().
+library(readxl)
+#loading the library "formattable" to introduce a table with all the variables.
+library(formattable)
+#loading the library "ggplot2" to create usefull plots.
+library(ggplot2)
+#loading the library "GGally" to create usefull plots.
+library(GGally)
+#loading the library "tidyverse" to perform varius manipulations.
+library(tidyverse)
+
+```
+```{r}
+#importing data from local folder to Rstudio in ob.data variable.
+ob.data <- read_xlsx("C:\\Users\\Andreas\\Desktop\\Assignment A\\PROBESITY dataset.xlsx", sheet = 1)
+#import the first sheet with the variable abbreviations.
+var_explain = read_xlsx("C:\\Users\\Andreas\\Desktop\\Assignment A\\PROBESITY dataset.xlsx", sheet = 2) 
+```
+
+```{r}
+#view the names of the columns in the ob.data dataset.
+names(ob.data)
+```
+
+
+```{r}
+#Use the function head() to examine at the first few rows of the ob.data dataset.
+head(ob.data)
+
+```
+
+```{r}
+#Use the function tail() to examine the last few rows of the ob.data dataset.
+tail(ob.data)
+```
+
+The dataset consists of 19 variables, with a total of 1890 observations.The data 
+includes information about prevalence rates for female and male adults 
+(aged 20 and over) from 45 countries in the 1975-2016 period. There are 3054 
+missing values, spread across different variables. Within the datase exist variables
+that the type is either numeric or character. However, the variable euro45 and eu
+are categorical variables. More specific for the variable euro45 if the value is
+1 this means that the country is a member of the european union, else if the value 
+is 0 then the country is not. As for the eu variable if the the value is 1, this 
+is translated that the country is a region of the European continent, else if the
+value is 0 the country is outised the European continent. Moreover, within the 
+dataset are variables that are calculated in order to assist the researchers of 
+the study to make conlusions such as urban, demeaned_lhc, demeaned_urban, 
+irgdppop_lhp and loga.
+
+
+```{r}
+#This function counts missing values
+sapply(ob.data, function(x) sum(length(which(is.na(x)))))
+```
+
+
+```{r}
+
+#create a table with all the variables 
+widget.formattable = formattable(var_explain) 
+#display the table 
+widget.formattable 
+
+```
+
+```{r}
+#With sapply function it is possible to examine the type of the variables.
+sapply(ob.data,class)
+```
+
+```{r}
+#acquire summary statistics for the ob.data dataset.
+summary(ob.data)
+```
+
+
+
+```{r}
+hist(ob.data$hc)
+```
+The histogram for Human capital index, based on years of schooling and returns 
+to education reveals that there is a negative skewness.
+
+```{r}
+
+hist(ob.data$urban)
+
+```
+
+```{r}
+#With this lines the dataset is splitted in two for better visualization 
+#purposes. First, making sure that the dataset is sorted alphabetically by the
+#country variable. Then the dataset is splitted in two halves. Manual inspection
+#assisted the effort to distinguish the precise row that the dataset needs to be 
+#splitted.
+
+#Alphabetically sorting the dataset based on the country variable.
+ob.data <- ob.data %>%
+  arrange(ob.data$country)
+
+#This is the first half.
+ob.data.half1 <-ob.data[1:966,]
+
+#This is the second half.
+ob.data.half2 <-ob.data[967:1890,]
+```
+
+
+
+```{r}
+ob.data.half1 %>% 
+  ggplot(aes(x = ob.data.half1$country, y = ob.data.half1$PFOV20P, fill = ob.data.half1$country)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal()
+
+
+```
+
+```{r}
+ob.data.half2 %>% 
+  ggplot(aes(x = ob.data.half2$country, y = ob.data.half2$PFOV20P, fill = ob.data.half2$country)) +
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal()
+```
+
+
+
+
+
+
+
+```{r}
+#creating a more refined dataframe with the variables that seem to be more 
+#interesting.
+euro.obese <- 
+  ob.data %>%
+  select(year, code, eu, PFOV20P, PFOB20P, PMOV20P, PMOB20P) %>%
+  mutate(obesity.sum = PFOB20P + PMOB20P)
+
+#Transforming the eu variable to factor.
+euro.obese$eu <- as.factor(euro.obese$eu)
+
+#Creating a plot to examine the frequency of obesity in the Euopean Continent and
+#outside the European Continent.
+frequency.obese <- 
+  euro.obese %>%
+  ggplot(aes(x = obesity.sum, linetype  = eu))+
+  geom_freqpoly(size = 1, bins = 60 , color = "blue")+
+  theme_minimal()
+
+frequency.obese 
+```
+
+```{r}
+#Creating a plot to examine how obesity transforms into the given timeline
+#separatedi n the Euopean Continent and outside the European Continent.
+total.obesity <- 
+  euro.obese  %>%
+  ggplot(mapping = aes(x = year, y = obesity.sum, linetype = eu))+
+  geom_smooth()+
+  theme_minimal()
+
+total.obesity
+```
+
+```{r}
+#Creating a plot to examine how female obesity transforms into the given timeline
+#separatedi n the Euopean Continent and outside the European Continent.
+female.obesity <- 
+  euro.obese %>%
+  ggplot(mapping = aes(x = year, y = PFOB20P, linetype = eu))+
+  geom_smooth()+
+  theme_minimal()
+
+female.obesity
+
+```
+
+```{r}
+#Creating a plot to examine how male obesity transforms into the given timeline
+#separatedi n the Euopean Continent and outside the European Continent.
+male.obesity <- 
+  euro.obese  %>%
+  ggplot(mapping = aes(x = year, y = PMOB20P, linetype = eu))+
+  geom_smooth()+
+  theme_minimal()
+
+male.obesity
+```
+
+```{r}
+#Creating a plot to compare Female and Male obesity.
+hist(euro.obese$PFOB20P, col=rgb(1,0,0,0.5), main= "Overlapping Histogram", xlab="Variable")
+hist(euro.obese$PMOB20P, col=rgb(0,0,1,0.5), add=T)
+box()
+legend("topright", legend=c("Female Obesity", "Male Obesity"),
+       col=c("red", "blue"), lwd=4, cex=0.8)
+```
+
+
+```{r}
+#Creating a plot to compare Females and Males that are overweight. 
+hist(euro.obese$PFOV20P, col=rgb(1,0,0,0.5), main= "Overlapping Histogram", xlab="Variable")
+hist(euro.obese$PMOV20P, col=rgb(0,0,1,0.5), add=T)
+box()
+legend("topright", legend=c("Female Obesity", "Male Obesity"),
+       col=c("red", "blue"), lwd=4, cex=0.8)
+```
+
+From the careful obseravation of varius graphics it is possible to conclude that
+the total population that is obese increases throughout the years. Taking into
+consideration the given data, the population in countries of the European Continent
+tends to be more obese than the population in the countries outside the European 
+Continent. Another important fact is that obesity is more prone to females than 
+males.
+
+
+```{r}
+#Summarizing the countries based on obesity.sum.
+obese.country <- 
+  euro.obese %>%
+  group_by(code) %>%
+  summarize(
+    sum(obesity.sum)
+  ) 
+
+colnames(obese.country) <- c("Country", "Total_Obesity")
+
+#Create a plot to examine which are the most obese countries.
+obesity.plot <-
+  obese.country %>%
+  ggplot(mapping = aes(x = Country, y = Total_Obesity, fill= Country))+
+  geom_bar(stat = "identity", width = 0.3) +
+  theme(axis.text.y = element_text(size = rel(0.9), angle = 0))+
+  coord_flip() 
+
+obesity.plot
+
+```
+
+  As it possible to Observe from the graphic there are countries of the European 
+  continent that surpass in obesity countries from outside the European continent.
+  This fact comes to a total agreement with the conclusions made so far from the
+  previous graphics.
+  
+  
+Firstly, the analyst loaded the necessary libraries readxl, formattable, ggplot2,
+ggally, tidyverse each designated for a different purpose. Then the analyst 
+proceeds with loading the data from a local file location. In order to get a firm,
+grasp of the data the analyst used a series of functions such as: names, 
+head and tail. 
+
+After the analyst used an sapply, a sum, a length, a which and an 
+is.na function in conjunction to find the missing values of the dataset. 
+The function formattable was utilized to load the second sheet of excel file 
+which contained information about the variables of the dataset. Then With sapply 
+function it is possible to examine the type of the variables. 
+
+Summary statistics  were calculated by summary function. Moreover, various 
+histograms were utilized  to see the tendencies of the variables and their 
+distribution. For better visualization purposes the analyst divided the dataset 
+in two halves based on alphabetic order. 
+
+Thus, the boxplots were created to be able to examine the  countries based on 
+obese population, no outliers were spotted. Furthermore, a 
+frequency diagram was created to analyze the frequency of obese people in and 
+outside the European Continent. 
+
+Apart from that. The created line diagrams  depict how obesity is related to 
+the timeline provided by the dataset. The overlapping histograms were created to
+show the difference between men and women independent of the countries. 
+Finally the bar plot depicts the total obesity for the countriescalculated as 
+the total sum of women and men.
+
